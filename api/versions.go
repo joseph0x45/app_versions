@@ -2,6 +2,8 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -10,20 +12,65 @@ type Response struct {
 	DownloadURL   string `json:"download_url"`
 }
 
+type Asset struct {
+	URL                string `json:"url"`
+	Name               string `json:"name"`
+	BrowserDownloadURL string `json:"browser_download_url"`
+}
+
+type Release struct {
+	TagName string  `json:"tag_name"`
+	Assetts []Asset `json:"assets"`
+}
+
+func getGithubLatestRelease(appName string) *Release {
+	appToURL := map[string]string{
+		"zen":   "https://api.github.com/repos/zen-browser/desktop/releases/latest",
+		"teams": "https://api.github.com/IsmaelMartinez/teams-for-linux/releases/latest",
+	}
+	req, err := http.NewRequest("GET", appToURL[appName], nil)
+	if err != nil {
+		fmt.Printf("Error while creating request: %s", err.Error())
+		return nil
+	}
+	res, err := http.DefaultClient.Do(req)
+	if err != nil {
+		fmt.Printf("Error while getting release: %s", err.Error())
+		return nil
+	}
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		fmt.Printf("Error while reading response body: %s", err.Error())
+		return nil
+	}
+	if res.StatusCode != 200 {
+		fmt.Printf("Expected HTTP 200 but got %d; Error %s", res.StatusCode, string(body))
+		return nil
+	}
+	release := &Release{}
+	err = json.Unmarshal(body, release)
+	if err != nil {
+		fmt.Printf("Error while unmarshalling data: %s", err.Error())
+		return nil
+	}
+	return release
+}
+
 // GET /api/versions
 func Handler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
-	targetApp := queryParams.Get("name")
-	response := &Response{
-		LatestVersion: targetApp,
-		DownloadURL:   "http://somelink",
-	}
-	jsonData, err := json.Marshal(response)
-	if err != nil {
-		w.WriteHeader(http.StatusInternalServerError)
-		w.Write([]byte("Something went bad"))
+	appName := queryParams.Get("name")
+	if appName != "zen" && appName != "teams" {
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+	release := getGithubLatestRelease(appName)
+	if release == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	data, _ := json.Marshal(release)
 	w.WriteHeader(http.StatusOK)
-	w.Write(jsonData)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
 }
