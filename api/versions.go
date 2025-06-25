@@ -1,10 +1,29 @@
 package api
 
 import (
-  "net/http"
-  "fmt"
+	"encoding/json"
+	"net/http"
 )
 
-func Handler(w http.ResponseWriter, r *http.Request){
-  fmt.Fprintf(w, "<h1>Hello from Go!</h1>")
+type Response struct {
+	LatestVersion string `json:"latest_version"`
+	DownloadURL   string `json:"download_url"`
+}
+
+// GET /api/versions
+func Handler(w http.ResponseWriter, r *http.Request) {
+	queryParams := r.URL.Query()
+	targetApp := queryParams.Get("name")
+	response := &Response{
+		LatestVersion: targetApp,
+		DownloadURL:   "http://somelink",
+	}
+	jsonData, err := json.Marshal(response)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte("Something went bad"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	w.Write(jsonData)
 }
