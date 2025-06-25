@@ -19,8 +19,9 @@ type Asset struct {
 }
 
 type Release struct {
-	TagName string  `json:"tag_name"`
-	Assetts []Asset `json:"assets"`
+	TagName     string  `json:"tag_name"`
+	AppImageURL string  `json:"app_image_url"`
+	Assets      []Asset `json:"assets"`
 }
 
 func getGithubLatestRelease(appName string) *Release {
@@ -56,6 +57,13 @@ func getGithubLatestRelease(appName string) *Release {
 	return release
 }
 
+func getDownloadName(appName string, appVersion string) string {
+	if appName == "zen" {
+		return "zen-x86_64.AppImage"
+	}
+	return fmt.Sprintf("teams-for-linux-%s-AppImage", appVersion)
+}
+
 // GET /api/versions
 func Handler(w http.ResponseWriter, r *http.Request) {
 	queryParams := r.URL.Query()
@@ -68,6 +76,13 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	if release == nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		return
+	}
+	downloadName := getDownloadName(appName, release.TagName)
+	for _, asset := range release.Assets {
+		if asset.Name == downloadName {
+			release.AppImageURL = asset.BrowserDownloadURL
+			break
+		}
 	}
 	data, _ := json.Marshal(release)
 	w.WriteHeader(http.StatusOK)
