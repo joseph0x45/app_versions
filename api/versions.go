@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 )
 
 type Response struct {
@@ -61,6 +62,7 @@ func getDownloadName(appName string, appVersion string) string {
 	if appName == "zen" {
 		return "zen-x86_64.AppImage"
 	}
+	appVersion = strings.TrimPrefix(appVersion, "v")
 	return fmt.Sprintf("teams-for-linux-%s-AppImage", appVersion)
 }
 
