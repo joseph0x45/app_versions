@@ -86,8 +86,7 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 			break
 		}
 	}
-	data, _ := json.Marshal(release)
+	result := fmt.Sprintf("%s %s", release.TagName, release.AppImageURL)
 	w.WriteHeader(http.StatusOK)
-	w.Header().Set("Content-Type", "application/json")
-	w.Write(data)
+	w.Write([]byte(result))
 }
