@@ -1,4 +1,4 @@
-package api
+package main
 
 import (
 	"encoding/json"
@@ -26,7 +26,7 @@ type Release struct {
 func getGithubLatestRelease(appName string) *Release {
 	appToURL := map[string]string{
 		"zen":   "https://api.github.com/repos/zen-browser/desktop/releases/latest",
-		"teams": "https://api.github.com/IsmaelMartinez/teams-for-linux/releases/latest",
+		"teams": "https://api.github.com/repos/IsmaelMartinez/teams-for-linux/releases/latest",
 	}
 	req, err := http.NewRequest("GET", appToURL[appName], nil)
 	if err != nil {
@@ -73,4 +73,8 @@ func Handler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(data)
+}
+
+func main(){
+  getGithubLatestRelease("teams")
 }
